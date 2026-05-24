@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Origin AG · Ingreso de Datos</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0f14;--bg2:#111827;--bg3:#1a2332;--bg4:#1f2d3d;
+  --lime:#22c55e;--lime2:#16a34a;--lime3:#86efac;--lime4:rgba(34,197,94,.12);
+  --amber:#f97316;--red:#ef4444;--red4:rgba(239,68,68,.12);
+  --txt:#e5e7eb;--txt2:#9ca3af;--txt3:#6b7280;
+  --line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --radius:12px;
+}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--txt);font-size:16px;line-height:1.45;
+  min-height:100vh;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:520px;margin:0 auto;padding:16px;min-height:100vh;display:flex;flex-direction:column;gap:14px}
+h1{font-size:22px;font-weight:700;letter-spacing:-.3px}
+h2{font-size:16px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.brand-dot{width:10px;height:10px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}
+.muted{color:var(--txt2);font-size:13px}
+label{display:block;font-size:13px;color:var(--txt2);margin-bottom:6px;margin-top:14px;font-weight:500}
+label:first-child{margin-top:0}
+input,select,textarea,button{
+  font:inherit;color:var(--txt);
+  width:100%;padding:13px 14px;
+  background:var(--bg3);border:1px solid var(--line2);border-radius:10px;
+  outline:none;transition:border-color .15s,background .15s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--lime);background:var(--bg4)}
+input[type=number]{font-variant-numeric:tabular-nums}
+textarea{min-height:70px;resize:vertical}
+.btn{
+  background:var(--lime);color:#04140a;border:none;font-weight:700;
+  padding:14px;cursor:pointer;letter-spacing:.2px;
+}
+.btn:hover{background:var(--lime3)}
+.btn:disabled{background:var(--txt3);color:var(--bg);cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--txt2);padding:9px 14px;width:auto;font-weight:500}
+.btn-ghost:hover{border-color:var(--lime);color:var(--lime)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tabs{display:flex;gap:6px;background:var(--bg3);padding:4px;border-radius:10px;border:1px solid var(--line)}
+.tab{
+  flex:1;background:transparent;border:none;color:var(--txt2);
+  padding:11px 8px;border-radius:7px;cursor:pointer;font-size:14px;font-weight:600;
+}
+.tab.active{background:var(--lime);color:#04140a}
+.fields{display:none}
+.fields.active{display:block}
+.msg{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px;display:none}
+.msg.ok{display:block;background:var(--lime4);color:var(--lime3);border:1px solid var(--lime2)}
+.msg.err{display:block;background:var(--red4);color:#fca5a5;border:1px solid var(--red)}
+.lista{display:flex;flex-direction:column;gap:8px}
+.item{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--bg3);padding:11px 13px;border-radius:8px;border:1px solid var(--line);
+  font-size:14px;
+}
+.item .tipo{color:var(--lime3);font-weight:600;font-size:12px;text-transform:uppercase}
+.item .det{color:var(--txt);margin-top:2px}
+.item .hora{color:var(--txt3);font-size:11px;font-variant-numeric:tabular-nums}
+.empty{color:var(--txt3);text-align:center;padding:20px;font-size:13px}
+@media (min-width:600px){
+  .wrap{padding:24px;gap:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- =========================================================
+  VISTA 1 — LOGIN
+========================================================= -->
+<div class="wrap" id="vista-login">
+  <div class="card" style="margin:auto;width:100%;max-width:380px">
+    <div class="brand"><span class="brand-dot"></span><h1>Origin AG</h1></div>
+    <p class="muted" style="margin-bottom:18px">Ingreso de datos productivos</p>
+
+    <label>Email</label>
+    <input id="email" type="email" inputmode="email" autocomplete="username" placeholder="adolfo@agrolarivera.com">
+
+    <label>Contraseña</label>
+    <input id="pwd" type="password" autocomplete="current-password">
+
+    <button id="btnLogin" class="btn" style="margin-top:18px">Entrar</button>
+    <div id="msgLogin" class="msg"></div>
+  </div>
+</div>
+
+<!-- =========================================================
+  VISTA 2 — APP
+========================================================= -->
+<div class="wrap" id="vista-app" style="display:none">
+  <div class="row">
+    <div>
+      <div class="brand"><span class="brand-dot"></span><strong>Origin AG</strong></div>
+      <div class="muted" id="userInfo">—</div>
+    </div>
+    <button id="btnLogout" class="btn-ghost">Salir</button>
+  </div>
+
+  <!-- Selector de granja + banda -->
+  <div class="card">
+    <label>Granja</label>
+    <select id="selGranja"><option>Cargando…</option></select>
+    <label>Banda activa</label>
+    <select id="selBanda"><option>—</option></select>
+    <label>Fecha del registro</label>
+    <input id="fecha" type="date">
+  </div>
+
+  <!-- Tabs + formulario por tipo -->
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="consumo">Consumo</button>
+      <button class="tab" data-tab="peso">Peso</button>
+      <button class="tab" data-tab="muerte">Muerte</button>
+    </div>
+
+    <!-- CONSUMO -->
+    <div class="fields active" id="f-consumo">
+      <label>Tipo de alimento</label>
+      <select id="tipoAlim">
+        <option value="F1">Fase 1</option>
+        <option value="F2">Fase 2</option>
+        <option value="F3">Fase 3</option>
+        <option value="Ini">Inicio</option>
+        <option value="Des">Desarrollo</option>
+        <option value="Eng" selected>Engorde</option>
+      </select>
+      <label>Kilos consumidos</label>
+      <input id="kg" type="number" inputmode="decimal" step="0.1" min="0" placeholder="ej: 850">
+    </div>
+
+    <!-- PESO -->
+    <div class="fields" id="f-peso">
+      <label>Peso promedio (kg)</label>
+      <input id="peso" type="number" inputmode="decimal" step="0.1" min="0" placeholder="ej: 88.5">
+      <label>Animales pesados (muestra)</label>
+      <input id="numAni" type="number" inputmode="numeric" min="1" placeholder="ej: 10">
+    </div>
+
+    <!-- MORTALIDAD -->
+    <div class="fields" id="f-muerte">
+      <label>Cantidad de animales muertos</label>
+      <input id="numMuertes" type="number" inputmode="numeric" min="1" placeholder="ej: 1">
+      <label>Causa</label>
+      <select id="causa">
+        <option value="">— seleccionar —</option>
+        <option value="edema">Edema</option>
+        <option value="neumonia">Neumonía</option>
+        <option value="MMA">MMA / mastitis</option>
+        <option value="lesion">Lesión / pisada</option>
+        <option value="diarrea">Diarrea</option>
+        <option value="subito">Súbita / desconocida</option>
+        <option value="otro">Otra</option>
+      </select>
+      <label>Observaciones (opcional)</label>
+      <textarea id="obs" placeholder="Detalle libre"></textarea>
+    </div>
+
+    <button id="btnGuardar" class="btn" style="margin-top:18px">Guardar registro</button>
+    <div id="msgForm" class="msg"></div>
+  </div>
+
+  <!-- Lista de últimos registros -->
+  <div class="card">
+    <h2>Mis registros de hoy</h2>
+    <div id="lista" class="lista"><div class="empty">Sin registros aún hoy.</div></div>
+  </div>
+
+  <p class="muted" style="text-align:center;margin-top:8px;font-size:11px">
+    Origin AG · v0.1 · datos locales se sincronizan al guardar
+  </p>
+</div>
+
+<script>
+// ============================================================
+//  CONFIG SUPABASE
+// ============================================================
+const SBURL  = window.ORIGIN_AG.SBURL;
+const SBANON = window.ORIGIN_AG.SBANON;
+const sb     = window.supabase.createClient(SBURL, SBANON, {
+  auth: { persistSession: true, autoRefreshToken: true }
+});
+
+// ============================================================
+//  HELPERS
+// ============================================================
+const $ = id => document.getElementById(id);
+const today = () => new Date().toISOString().slice(0,10);
+function msg(el, text, ok){
+  el.textContent = text;
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+  setTimeout(() => { if(ok) el.className='msg'; }, ok ? 3500 : 8000);
+}
+
+// ============================================================
+//  AUTH
+// ============================================================
+async function checkAuth(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ await mostrarApp(session.user); }
+  else { mostrarLogin(); }
+}
+function mostrarLogin(){
+  $('vista-login').style.display = '';
+  $('vista-app').style.display = 'none';
+  $('email').value = '';
+  $('pwd').value = '';
+}
+async function mostrarApp(user){
+  $('vista-login').style.display = 'none';
+  $('vista-app').style.display = '';
+  const meta = user.user_metadata || {};
+  $('userInfo').textContent = (meta.nombre || user.email) + (meta.rol ? ' · ' + meta.rol : '');
+  $('fecha').value = today();
+  await cargarGranjas();
+  await cargarRegistrosHoy();
+}
+
+$('btnLogin').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  const pwd   = $('pwd').value;
+  if(!email || !pwd){ return msg($('msgLogin'), 'Falta email o contraseña', false); }
+  $('btnLogin').disabled = true;
+  $('btnLogin').textContent = 'Entrando…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  $('btnLogin').disabled = false;
+  $('btnLogin').textContent = 'Entrar';
+  if(error){ return msg($('msgLogin'), 'Credenciales inválidas', false); }
+  await mostrarApp(data.user);
+});
+
+$('pwd').addEventListener('keydown', e => { if(e.key === 'Enter') $('btnLogin').click(); });
+
+$('btnLogout').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  mostrarLogin();
+});
+
+// ============================================================
+//  CARGA DE GRANJAS Y BANDAS (RLS filtra por tenant del JWT)
+// ============================================================
+async function cargarGranjas(){
+  const { data, error } = await sb.from('granjas').select('id, nombre, sitio').order('nombre');
+  const sel = $('selGranja');
+  if(error || !data || data.length === 0){
+    sel.innerHTML = '<option value="">— sin granjas —</option>';
+    return;
+  }
+  sel.innerHTML = data.map(g => `<option value="${g.id}">${g.nombre}${g.sitio ? ' · '+g.sitio : ''}</option>`).join('');
+  await cargarBandas(sel.value);
+}
+$('selGranja').addEventListener('change', e => cargarBandas(e.target.value));
+
+async function cargarBandas(granja_id){
+  if(!granja_id){ $('selBanda').innerHTML = '<option>—</option>'; return; }
+  const { data, error } = await sb
+    .from('bandas')
+    .select('id, codigo, semana_vida, fase_actual, animales_actuales, fecha_inicio')
+    .eq('granja_id', granja_id)
+    .eq('estado', 'activa')
+    .order('fecha_inicio', { ascending: false });
+  const sel = $('selBanda');
+  if(error || !data || data.length === 0){
+    sel.innerHTML = '<option value="">— sin bandas activas —</option>';
+    return;
+  }
+  // Cache de bandas para poder leer semana_vida al guardar registros
+  window._bandasCache = {};
+  data.forEach(b => { window._bandasCache[b.id] = b; });
+  sel.innerHTML = data.map(b =>
+    `<option value="${b.id}">${b.codigo} · sem ${b.semana_vida || '?'} · ${b.fase_actual || ''} · ${b.animales_actuales || 0} animales</option>`
+  ).join('');
+}
+
+// ============================================================
+//  TABS
+// ============================================================
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.fields').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    $('f-' + t.dataset.tab).classList.add('active');
+  });
+});
+function tabActiva(){
+  return document.querySelector('.tab.active').dataset.tab;
+}
+
+// ============================================================
+//  GUARDAR REGISTRO
+// ============================================================
+$('btnGuardar').addEventListener('click', async () => {
+  const tab = tabActiva();
+  const banda_id = $('selBanda').value;
+  const fecha    = $('fecha').value;
+  if(!banda_id){ return msg($('msgForm'), 'Seleccioná una banda activa', false); }
+  if(!fecha){ return msg($('msgForm'), 'Seleccioná una fecha', false); }
+
+  $('btnGuardar').disabled = true;
+  $('btnGuardar').textContent = 'Guardando…';
+
+  // Datos del usuario y de la banda para auditoría
+  const { data:{ user } } = await sb.auth.getUser();
+  const banda = (window._bandasCache || {})[banda_id] || {};
+  const semana_vida_snapshot = banda.semana_vida || null;
+  const creado_por = user?.email || 'desconocido';
+
+  let payload, tabla, resumen;
+  try {
+    if(tab === 'consumo'){
+      const kg = parseFloat($('kg').value);
+      if(!kg || kg <= 0) throw new Error('Kilos inválidos');
+      tabla = 'consumos';
+      // Nombres reales de columnas confirmados via Schema Metadata Extractor
+      payload = {
+        banda_id,
+        fecha,
+        kg_consumidos:   kg,
+        producto_codigo: $('tipoAlim').value,
+        fuente:          'web_form',
+        creado_por:      creado_por
+      };
+      resumen = `${$('tipoAlim').value} · ${kg} kg`;
+    }
+    else if(tab === 'peso'){
+      const peso = parseFloat($('peso').value);
+      const n    = parseInt($('numAni').value, 10);
+      if(!peso || peso <= 0) throw new Error('Peso inválido');
+      if(!n || n < 1) throw new Error('Cantidad de animales inválida');
+      tabla = 'pesajes';
+      payload = {
+        banda_id,
+        fecha,
+        peso_promedio_kg: peso,
+        n_animales:       n,
+        semana_vida:      semana_vida_snapshot,
+        fuente:           'web_form'
+      };
+      resumen = `${peso} kg promedio (n=${n})`;
+    }
+    else if(tab === 'muerte'){
+      const num   = parseInt($('numMuertes').value, 10);
+      const causa = $('causa').value;
+      if(!num || num < 1) throw new Error('Cantidad inválida');
+      if(!causa) throw new Error('Falta indicar causa');
+      tabla = 'eventos_mortalidad';
+      payload = {
+        banda_id,
+        fecha,
+        cantidad:    num,
+        causa:       causa,
+        semana_vida: semana_vida_snapshot
+      };
+      // Solo agregar observaciones si el usuario escribió algo Y la columna existe.
+      // Si la columna observaciones no fue creada con ALTER TABLE, este INSERT
+      // fallará con un error claro y la dejamos fuera.
+      const obs = $('obs').value.trim();
+      if(obs) payload.observaciones = obs;
+      resumen = `${num} muerte(s) · ${causa}`;
+    }
+
+    const { error } = await sb.from(tabla).insert(payload);
+    if(error) throw error;
+
+    msg($('msgForm'), '✅ Guardado: ' + resumen, true);
+    limpiarForm(tab);
+    await cargarRegistrosHoy();
+  } catch(e){
+    msg($('msgForm'), '⚠️ ' + (e.message || 'Error al guardar'), false);
+  } finally {
+    $('btnGuardar').disabled = false;
+    $('btnGuardar').textContent = 'Guardar registro';
+  }
+});
+
+function limpiarForm(tab){
+  if(tab === 'consumo'){ $('kg').value = ''; }
+  if(tab === 'peso'){ $('peso').value = ''; $('numAni').value = ''; }
+  if(tab === 'muerte'){ $('numMuertes').value = ''; $('causa').value = ''; $('obs').value = ''; }
+}
+
+// ============================================================
+//  LISTA DE REGISTROS DE HOY
+// ============================================================
+async function cargarRegistrosHoy(){
+  const hoy = today();
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user) return;
+
+  // Consultar las 3 tablas en paralelo, filtrando por fecha = hoy y created_by = usuario actual
+  // Asumimos que las tablas tienen un campo created_by con default auth.uid() via RLS trigger.
+  const [c, p, m] = await Promise.all([
+    sb.from('consumos').select('id, banda_id, kg_consumidos, producto_codigo, created_at').eq('fecha', hoy).order('created_at',{ascending:false}).limit(20),
+    sb.from('pesajes').select('id, banda_id, peso_promedio_kg, n_animales, created_at').eq('fecha', hoy).order('created_at',{ascending:false}).limit(20),
+    sb.from('eventos_mortalidad').select('id, banda_id, cantidad, causa, created_at').eq('fecha', hoy).order('created_at',{ascending:false}).limit(20),
+  ]);
+
+  const items = [];
+  (c.data || []).forEach(r => items.push({ tipo:'Consumo', det:`${r.producto_codigo} · ${r.kg_consumidos} kg`, t:r.created_at }));
+  (p.data || []).forEach(r => items.push({ tipo:'Peso',    det:`${r.peso_promedio_kg} kg (n=${r.n_animales})`, t:r.created_at }));
+  (m.data || []).forEach(r => items.push({ tipo:'Muerte',  det:`${r.cantidad} · ${r.causa}`, t:r.created_at }));
+  items.sort((a,b) => (b.t || '').localeCompare(a.t || ''));
+
+  const cont = $('lista');
+  if(items.length === 0){
+    cont.innerHTML = '<div class="empty">Sin registros aún hoy.</div>';
+    return;
+  }
+  cont.innerHTML = items.slice(0,15).map(it => {
+    const hora = it.t ? new Date(it.t).toLocaleTimeString('es-CR', {hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="item">
+      <div>
+        <div class="tipo">${it.tipo}</div>
+        <div class="det">${it.det}</div>
+      </div>
+      <div class="hora">${hora}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+checkAuth();
+</script>
+</body>
+</html>
