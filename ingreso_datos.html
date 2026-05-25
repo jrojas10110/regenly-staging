@@ -56,6 +56,8 @@ textarea{min-height:70px;resize:vertical}
   padding:11px 8px;border-radius:7px;cursor:pointer;font-size:14px;font-weight:600;
 }
 .tab.active{background:var(--lime);color:#04140a}
+.subtab{flex:1;background:transparent;border:none;color:var(--txt2);padding:9px 8px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600}
+.subtab.active{background:var(--lime);color:#04140a}
 .fields{display:none}
 .fields.active{display:block}
 .msg{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px;display:none}
@@ -106,7 +108,10 @@ textarea{min-height:70px;resize:vertical}
       <div class="brand"><span class="brand-dot"></span><strong>Origin AG</strong></div>
       <div class="muted" id="userInfo">—</div>
     </div>
-    <button id="btnLogout" class="btn-ghost">Salir</button>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <a href="dashboard_origin-ag.html" class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">📊 Reportes</a>
+      <button id="btnLogout" class="btn-ghost">Salir</button>
+    </div>
   </div>
 
   <!-- Selector de granja + banda -->
@@ -144,10 +149,25 @@ textarea{min-height:70px;resize:vertical}
 
     <!-- PESO -->
     <div class="fields" id="f-peso">
-      <label>Peso promedio (kg)</label>
-      <input id="peso" type="number" inputmode="decimal" step="0.1" min="0" placeholder="ej: 88.5">
-      <label>Animales pesados (muestra)</label>
-      <input id="numAni" type="number" inputmode="numeric" min="1" placeholder="ej: 10">
+      <div class="tabs" style="margin-bottom:6px">
+        <button type="button" class="subtab active" data-pesomode="masivo">Pesar muchos</button>
+        <button type="button" class="subtab" data-pesomode="promedio">Promedio directo</button>
+      </div>
+
+      <!-- Modo masivo (por defecto): un peso por línea, calcula el promedio solo -->
+      <div id="peso-masivo">
+        <label>Pesos individuales — uno por línea (pegá la columna de la balanza)</label>
+        <textarea id="pesosMasivo" inputmode="decimal" style="min-height:150px" placeholder="88.5&#10;91.2&#10;85.7&#10;90.0&#10;…"></textarea>
+        <div id="pesoCalc" class="muted" style="margin-top:8px">Esperando pesos…</div>
+      </div>
+
+      <!-- Modo promedio directo (el de antes) -->
+      <div id="peso-promedio" style="display:none">
+        <label>Peso promedio (kg)</label>
+        <input id="peso" type="number" inputmode="decimal" step="0.1" min="0" placeholder="ej: 88.5">
+        <label>Animales pesados (muestra)</label>
+        <input id="numAni" type="number" inputmode="numeric" min="1" placeholder="ej: 65">
+      </div>
     </div>
 
     <!-- MORTALIDAD -->
@@ -301,6 +321,36 @@ function tabActiva(){
 }
 
 // ============================================================
+//  PESAJE: modo masivo (pegar muchos pesos) vs promedio directo
+// ============================================================
+function pesoMode(){ return document.querySelector('.subtab.active').dataset.pesomode; }
+function parsePesos(txt){
+  return (txt || '').split(/\s+/)
+    .map(s => parseFloat(s.replace(',', '.')))
+    .filter(v => !isNaN(v) && v > 0);
+}
+function calcPesos(){
+  const arr = parsePesos($('pesosMasivo').value);
+  const el = $('pesoCalc');
+  if(arr.length === 0){ el.textContent = 'Esperando pesos…'; return; }
+  const n = arr.length;
+  const prom = arr.reduce((a,b)=>a+b,0) / n;
+  const desv = n > 1 ? Math.sqrt(arr.reduce((a,b)=>a+(b-prom)**2,0)/(n-1)) : 0;
+  el.innerHTML = `<strong style="color:var(--lime3)">${n}</strong> animales · `
+    + `promedio <strong style="color:var(--lime3)">${prom.toFixed(2)} kg</strong> · ± ${desv.toFixed(2)} kg`;
+}
+$('pesosMasivo').addEventListener('input', calcPesos);
+document.querySelectorAll('.subtab').forEach(s => {
+  s.addEventListener('click', () => {
+    document.querySelectorAll('.subtab').forEach(x => x.classList.remove('active'));
+    s.classList.add('active');
+    const m = s.dataset.pesomode;
+    $('peso-masivo').style.display   = (m === 'masivo')   ? '' : 'none';
+    $('peso-promedio').style.display = (m === 'promedio') ? '' : 'none';
+  });
+});
+
+// ============================================================
 //  GUARDAR REGISTRO
 // ============================================================
 $('btnGuardar').addEventListener('click', async () => {
@@ -337,8 +387,16 @@ $('btnGuardar').addEventListener('click', async () => {
       resumen = `${$('tipoAlim').value} · ${kg} kg`;
     }
     else if(tab === 'peso'){
-      const peso = parseFloat($('peso').value);
-      const n    = parseInt($('numAni').value, 10);
+      let peso, n;
+      if(pesoMode() === 'masivo'){
+        const arr = parsePesos($('pesosMasivo').value);
+        if(arr.length < 1) throw new Error('Pegá al menos un peso (uno por línea)');
+        n = arr.length;
+        peso = Math.round((arr.reduce((a,b)=>a+b,0) / n) * 100) / 100;
+      } else {
+        peso = parseFloat($('peso').value);
+        n    = parseInt($('numAni').value, 10);
+      }
       if(!peso || peso <= 0) throw new Error('Peso inválido');
       if(!n || n < 1) throw new Error('Cantidad de animales inválida');
       tabla = 'pesajes';
@@ -389,7 +447,7 @@ $('btnGuardar').addEventListener('click', async () => {
 
 function limpiarForm(tab){
   if(tab === 'consumo'){ $('kg').value = ''; }
-  if(tab === 'peso'){ $('peso').value = ''; $('numAni').value = ''; }
+  if(tab === 'peso'){ $('peso').value = ''; $('numAni').value = ''; $('pesosMasivo').value = ''; calcPesos(); }
   if(tab === 'muerte'){ $('numMuertes').value = ''; $('causa').value = ''; $('obs').value = ''; }
 }
 

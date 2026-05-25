@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Origin AG</title>
+<link rel="icon" href="data:,">
+<script src="config.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0f14;--bg2:#111827;--lime:#22c55e;--lime3:#86efac;--txt:#e5e7eb;--txt2:#9ca3af;--line:rgba(255,255,255,.08)}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:520px;width:100%}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;justify-content:center}
+.brand-dot{width:12px;height:12px;border-radius:50%;background:var(--lime);box-shadow:0 0 14px var(--lime)}
+h1{font-size:26px;font-weight:700;letter-spacing:-.3px}
+.muted{color:var(--txt2);font-size:13px;text-align:center;margin-bottom:24px}
+.cards{display:grid;gap:14px}
+@media(min-width:560px){.cards{grid-template-columns:1fr 1fr}}
+a.card{display:block;text-decoration:none;color:var(--txt);background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:28px 20px;text-align:center;transition:border-color .15s,transform .1s}
+a.card:hover{border-color:var(--lime);transform:translateY(-2px)}
+.ico{font-size:42px;display:block;margin-bottom:12px}
+.ct{font-size:18px;font-weight:700;color:var(--lime3)}
+.cd{font-size:13px;color:var(--txt2);margin-top:6px}
+.envbadge{text-align:center;margin-top:22px;font-size:11px;color:var(--txt2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><span class="brand-dot"></span><h1>Origin AG</h1></div>
+  <p class="muted">¿Qué querés hacer?</p>
+  <div class="cards">
+    <a class="card" href="ingreso_datos.html">
+      <span class="ico">📝</span>
+      <div class="ct">Ingresar datos</div>
+      <div class="cd">Consumo · peso · mortalidad</div>
+    </a>
+    <a class="card" href="dashboard_origin-ag.html">
+      <span class="ico">📊</span>
+      <div class="ct">Ver reportes</div>
+      <div class="cd">Dashboard y análisis</div>
+    </a>
+  </div>
+  <div class="envbadge" id="env"></div>
+</div>
+<script>
+  try {
+    document.getElementById('env').textContent =
+      'entorno: ' + (window.ORIGIN_AG ? window.ORIGIN_AG.env : '—');
+  } catch (e) {}
+</script>
+</body>
+</html>
