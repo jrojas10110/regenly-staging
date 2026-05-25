@@ -267,8 +267,8 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
     <h1>AGRICULTURE MANAGEMENT</h1>
     
     <div class="lf">
-      <label>Usuario</label>
-      <input type="text" id="li-u" placeholder="Usuario" autocomplete="username"
+      <label>Email</label>
+      <input type="text" id="li-u" placeholder="tu@correo.com" autocomplete="username"
              onkeydown="if(event.key==='Enter')document.getElementById('li-p').focus()">
     </div>
     <div class="lf">
@@ -3592,25 +3592,38 @@ function _offlineAnswer(q){
 }
 
 // ── LOGIN ──
-var _USERS={'Jordan':'supercross'};
-function doLogin(){
+// LOGIN vía Supabase — mismos usuarios que el formulario de ingreso (RLS por tenant).
+function _entrarDashboard(){
+  try{buildChips();render();}catch(e){console.error('Init:',e.message,e.stack);}
+  var ov=document.getElementById('lo');
+  if(ov){ov.style.transition='opacity .35s';ov.style.opacity='0';
+    setTimeout(function(){ov.style.display='none';},350);
+  }
+  if(typeof loadFromDB==='function'){ try{ loadFromDB(); }catch(e){} }
+}
+async function doLogin(){
   var u=(document.getElementById('li-u')||{value:''}).value.trim();
   var p=(document.getElementById('li-p')||{value:''}).value;
   var eEl=document.getElementById('le');
-  if(_USERS[u]===p){
-    // Init data immediately so chat & all tabs have data from first second
-    try{buildChips();render();}catch(e){console.error('Init:',e.message,e.stack);}
-    var ov=document.getElementById('lo');
-    if(ov){ov.style.transition='opacity .35s';ov.style.opacity='0';
-      setTimeout(function(){ov.style.display='none';},350);
-    }
-  } else {
+  var btn=document.getElementById('lb-btn');
+  if(!u||!p){ if(eEl)eEl.textContent='Falta email o contraseña'; return; }
+  if(!_sb){ if(eEl)eEl.textContent='Supabase no disponible'; return; }
+  if(btn){btn.disabled=true;btn.textContent='Entrando…';}
+  try{
+    var r=await _sb.auth.signInWithPassword({email:u,password:p});
+    if(r.error) throw r.error;
+    _entrarDashboard();
+  }catch(e){
     if(eEl)eEl.textContent='Usuario o contraseña incorrectos';
     var ip=document.getElementById('li-p');
     if(ip){ip.value='';ip.style.borderColor='#d9534f';
       setTimeout(function(){if(ip)ip.style.borderColor='#1e3350';},1600);}
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Ingresar →';}
   }
 }
+// Si ya hay sesión (te logueaste en el formulario u antes), entrar directo.
+(async function(){ try{ if(_sb){ var s=await _sb.auth.getSession(); if(s.data&&s.data.session){ _entrarDashboard(); } } }catch(e){} })();
 
 </script>
 
