@@ -18,9 +18,8 @@
       anon: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4c3Nlc2VjaGl1Z3BscGxweXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNDM1MDksImV4cCI6MjA5NDgxOTUwOX0.oFbdo--8e5YeVDx_RRAfABZqDhH5XoURqmW8MJAMIPU'
     },
     staging: {
-      // TODO Jordan: pegá la URL y la anon key del proyecto Supabase de STAGING.
-      url:  'https://TU-REF-STAGING.supabase.co',
-      anon: 'PEGA_AQUI_LA_ANON_KEY_DE_STAGING'
+      url:  'https://sqmvmhibuoeujrqcrzyf.supabase.co',
+      anon: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxbXZtaGlidW9ldWpycWNyenlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MDUxMDMsImV4cCI6MjA5NTE4MTEwM30.GW2ipLJmVIoUAQq2sOHNoAsFDYJgXl206kkCQU_L-Qs'
     }
   };
 
