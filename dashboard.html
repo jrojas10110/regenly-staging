@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReGenly · Reportes</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a0f14;--bg2:#0f172a;--bg3:#1a2332;--bg4:#1f2d3d;
+  --lime:#22c55e;--lime2:#16a34a;--lime3:#86efac;--lime4:rgba(34,197,94,.12);
+  --amber:#f97316;--amber3:#fdba74;--red:#ef4444;--red3:#fca5a5;
+  --txt:#e5e7eb;--txt2:#9ca3af;--txt3:#6b7280;
+  --line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.12);
+  --radius:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+/* ─── SIDEBAR ─── */
+.app{display:flex;min-height:100vh}
+.side{width:240px;background:var(--bg2);border-right:1px solid var(--line);padding:18px 14px 22px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.side .brand{display:flex;align-items:center;gap:10px;margin:4px 6px 18px}
+.side .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}
+.side .brand h1{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
+.side .brand small{display:block;color:var(--txt2);font-size:9.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;margin-top:3px}
+.side .group{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.14em;margin:14px 10px 6px;font-weight:600}
+.side .nav{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;color:var(--txt2);font-size:13.5px;cursor:pointer;background:transparent;border:none;width:100%;text-align:left;font-weight:500;transition:background .12s,color .12s}
+.side .nav:hover{color:var(--txt);background:var(--bg3)}
+.side .nav.active{color:var(--lime);background:var(--bg3)}
+.side .nav .ic{font-size:15px;width:18px;text-align:center}
+.side .foot{margin-top:auto;padding:10px 8px 0;border-top:1px solid var(--line);font-size:11px;color:var(--txt3)}
+.side .foot .env{color:var(--lime3);font-family:ui-monospace,Menlo,Consolas,monospace}
+
+/* ─── MAIN ─── */
+.main{flex:1;padding:22px 28px 40px;max-width:calc(100vw - 240px);overflow-x:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:16px;flex-wrap:wrap}
+.search{flex:1;max-width:380px;position:relative}
+.search input{width:100%;padding:10px 14px 10px 36px;background:var(--bg2);border:1px solid var(--line2);border-radius:9px;color:var(--txt);outline:none;font:inherit;transition:border-color .15s}
+.search input:focus{border-color:var(--lime)}
+.search::before{content:"🔎";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.7}
+.user{display:flex;align-items:center;gap:10px}
+.user .who{text-align:right;font-size:12px;color:var(--txt2);line-height:1.25}
+.user .who strong{display:block;color:var(--txt);font-size:13.5px;font-weight:600}
+.user .av{width:36px;height:36px;border-radius:50%;background:var(--lime);color:#04140a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--txt2);padding:8px 12px;border-radius:8px;cursor:pointer;font:600 12.5px inherit;transition:border-color .15s,color .15s}
+.btn-ghost:hover{border-color:var(--lime);color:var(--lime)}
+
+.ph{margin-bottom:20px}
+.ph h2{font-size:24px;font-weight:700;letter-spacing:-.4px}
+.ph .muted{color:var(--txt2);font-size:13.5px;margin-top:4px}
+
+/* ─── KPI CARDS ─── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;position:relative;transition:border-color .15s}
+.kpi:hover{border-color:var(--line2)}
+.kpi .kl{font-size:12px;color:var(--txt2);font-weight:500;margin-bottom:8px}
+.kpi .kv{font-size:28px;font-weight:700;letter-spacing:-.6px;font-variant-numeric:tabular-nums;color:var(--txt);line-height:1.1}
+.kpi .ku{font-size:13px;color:var(--txt2);margin-left:4px;font-weight:500}
+.kpi .ki{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:15px}
+
+/* ─── CARDS / GRID ─── */
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+.card .ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.card .ch h3{font-size:14.5px;font-weight:600}
+.card .ch .sub{font-size:11.5px;color:var(--txt2)}
+.grid2{display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-bottom:14px}
+.chart-wrap{position:relative;height:240px}
+
+/* ─── TABLES ─── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:11px;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:8px 8px;border-bottom:1px solid var(--line)}
+.tbl td{font-size:13px;color:var(--txt);padding:11px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.015)}
+.num{text-align:right}
+.empty{color:var(--txt3);text-align:center;padding:24px;font-size:13px}
+
+/* ─── BAR CHART (CSS, per-producto) ─── */
+.bar{margin:8px 0}
+.bar .row{display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);margin-bottom:4px}
+.bar .row strong{color:var(--lime3);font-weight:600;font-variant-numeric:tabular-nums}
+.bar .track{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.bar .fill{height:100%;background:linear-gradient(90deg,var(--lime),var(--lime3));border-radius:4px}
+
+/* ─── LOGIN ─── */
+.login-wrap{position:fixed;inset:0;background:radial-gradient(ellipse at center,var(--bg2),var(--bg) 70%);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.login-card{background:var(--bg2);border:1px solid var(--line2);border-radius:16px;padding:30px;width:100%;max-width:380px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6)}
+.login-card .brand{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.login-card .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}
+.login-card h1{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.login-card .muted{color:var(--txt2);font-size:13px;margin-bottom:18px}
+.login-card label{display:block;font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin:14px 0 6px}
+.login-card input{width:100%;padding:12px 14px;background:var(--bg3);border:1px solid var(--line2);border-radius:10px;color:var(--txt);outline:none;font:inherit;transition:border-color .15s}
+.login-card input:focus{border-color:var(--lime)}
+.login-card .btn{background:var(--lime);color:#04140a;border:none;padding:13px;border-radius:10px;font-weight:700;width:100%;margin-top:18px;cursor:pointer;font-size:14px;transition:background .15s}
+.login-card .btn:hover{background:var(--lime3)}
+.login-card .btn:disabled{background:var(--txt3);color:var(--bg);cursor:not-allowed}
+.login-card .err{color:var(--red3);font-size:12.5px;margin-top:10px;text-align:center;display:none}
+.login-card .err.show{display:block}
+
+@media(max-width:880px){
+  .side{display:none}
+  .main{padding:16px;max-width:100vw}
+  .grid2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ───────── LOGIN OVERLAY ───────── -->
+<div class="login-wrap" id="login">
+  <div class="login-card">
+    <div class="brand"><span class="dot"></span><h1>ReGenly</h1></div>
+    <p class="muted">Reportes · ingresá con tu cuenta</p>
+    <label>Email</label>
+    <input id="li-u" type="email" autocomplete="username" placeholder="tu@correo.com">
+    <label>Contraseña</label>
+    <input id="li-p" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn" id="lb" onclick="doLogin()">Ingresar →</button>
+    <div class="err" id="le"></div>
+  </div>
+</div>
+
+<!-- ───────── APP ───────── -->
+<div class="app" id="app" style="display:none">
+  <aside class="side">
+    <div class="brand"><span class="dot"></span><div><h1>ReGenly</h1><small>Reportes</small></div></div>
+    <div class="group">Vistas</div>
+    <button class="nav active" data-view="overview"><span class="ic">📊</span>Resumen</button>
+    <button class="nav" data-view="bandas"><span class="ic">🐖</span>Bandas activas</button>
+    <button class="nav" data-view="consumo"><span class="ic">🌾</span>Consumo</button>
+    <button class="nav" data-view="peso"><span class="ic">⚖️</span>Pesajes</button>
+    <button class="nav" data-view="muerte"><span class="ic">🩺</span>Mortalidad</button>
+    <div class="group">Sistema</div>
+    <a class="nav" href="ingreso_datos.html"><span class="ic">📝</span>Ingresar datos</a>
+    <a class="nav" href="index.html"><span class="ic">🏠</span>Inicio</a>
+    <button class="nav" id="btnOut"><span class="ic">⎋</span>Salir</button>
+    <div class="foot">v2 · entorno: <span class="env" id="env">—</span></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="search"><input placeholder="Buscar (próximamente)…" type="search"></div>
+      <div class="user">
+        <div class="who"><strong id="userName">—</strong><span id="userMeta">conectando…</span></div>
+        <div class="av" id="userAv">·</div>
+      </div>
+    </div>
+
+    <!-- RESUMEN -->
+    <section class="view" id="v-overview">
+      <div class="ph"><h2>Resumen</h2><div class="muted">Estado actual de tu operación · datos en vivo de Supabase</div></div>
+      <div class="kpis">
+        <div class="kpi"><div class="ki">🐖</div><div class="kl">Bandas activas</div><div class="kv" id="k-bandas">—</div></div>
+        <div class="kpi"><div class="ki">📈</div><div class="kl">Animales totales</div><div class="kv" id="k-animales">—</div></div>
+        <div class="kpi"><div class="ki">⚖️</div><div class="kl">Último peso promedio</div><div class="kv" id="k-peso">—</div></div>
+        <div class="kpi"><div class="ki">🩺</div><div class="kl">Muertes (últimos 7d)</div><div class="kv" id="k-muertes">—</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="ch"><h3>Peso promedio en el tiempo</h3><span class="sub">Últimos pesajes</span></div>
+          <div class="chart-wrap"><canvas id="chPeso"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ch"><h3>Consumo por producto</h3><span class="sub">Últimos 30 días</span></div>
+          <div id="chConsumo"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BANDAS -->
+    <section class="view" id="v-bandas" style="display:none">
+      <div class="ph"><h2>Bandas activas</h2><div class="muted">Lotes en producción</div></div>
+      <div class="card"><table class="tbl"><thead><tr><th>Código</th><th>Granja</th><th>Fase</th><th class="num">Semana</th><th class="num">Animales</th><th>Inicio</th></tr></thead><tbody id="tb-bandas"></tbody></table></div>
+    </section>
+
+    <!-- CONSUMO -->
+    <section class="view" id="v-consumo" style="display:none">
+      <div class="ph"><h2>Consumo de alimento</h2><div class="muted">Últimos registros (30 días)</div></div>
+      <div class="card"><table class="tbl"><thead><tr><th>Fecha</th><th>Banda</th><th>Producto</th><th class="num">Kg</th><th>Cargado por</th></tr></thead><tbody id="tb-consumo"></tbody></table></div>
+    </section>
+
+    <!-- PESO -->
+    <section class="view" id="v-peso" style="display:none">
+      <div class="ph"><h2>Pesajes</h2><div class="muted">Últimos pesajes</div></div>
+      <div class="card"><table class="tbl"><thead><tr><th>Fecha</th><th>Banda</th><th class="num">Promedio (kg)</th><th class="num">N animales</th><th class="num">Semana</th></tr></thead><tbody id="tb-peso"></tbody></table></div>
+    </section>
+
+    <!-- MUERTE -->
+    <section class="view" id="v-muerte" style="display:none">
+      <div class="ph"><h2>Mortalidad</h2><div class="muted">Últimos eventos</div></div>
+      <div class="card"><table class="tbl"><thead><tr><th>Fecha</th><th>Banda</th><th class="num">Cantidad</th><th>Causa</th><th>Observaciones</th></tr></thead><tbody id="tb-muerte"></tbody></table></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const SBURL  = window.ORIGIN_AG.SBURL;
+const SBANON = window.ORIGIN_AG.SBANON;
+const sb = window.supabase.createClient(SBURL, SBANON, { auth: { persistSession: true, autoRefreshToken: true } });
+const $ = id => document.getElementById(id);
+$('env').textContent = window.ORIGIN_AG.env;
+
+function showErr(t){ const e=$('le'); e.textContent=t; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'), 6000); }
+
+async function doLogin(){
+  const u = $('li-u').value.trim(), p = $('li-p').value;
+  if(!u || !p) return showErr('Falta email o contraseña');
+  const btn = $('lb'); btn.disabled = true; btn.textContent = 'Entrando…';
+  const { data, error } = await sb.auth.signInWithPassword({ email:u, password:p });
+  btn.disabled = false; btn.textContent = 'Ingresar →';
+  if(error) return showErr('Usuario o contraseña incorrectos');
+  enterApp(data.user);
+}
+
+function enterApp(user){
+  $('login').style.display = 'none';
+  $('app').style.display = '';
+  const meta = user.user_metadata || user.app_metadata || {};
+  const nombre = meta.nombre || user.email;
+  $('userName').textContent = nombre;
+  $('userMeta').textContent = (meta.rol || 'usuario') + ' · ' + window.ORIGIN_AG.env;
+  $('userAv').textContent = (nombre[0] || '?').toUpperCase();
+  cargarTodo();
+}
+
+document.querySelectorAll('.side button.nav[data-view]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.side .nav').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+    $('v-' + b.dataset.view).style.display = '';
+  });
+});
+$('btnOut').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+const fmt = (n, d=0) => (n == null ? '—' : Number(n).toLocaleString('es-CR', { minimumFractionDigits:d, maximumFractionDigits:d }));
+
+async function cargarTodo(){
+  // BANDAS
+  const { data: bandas } = await sb.from('bandas')
+    .select('id, codigo, semana_vida, fase_actual, animales_actuales, fecha_inicio, estado, granja_id, granja:granjas(nombre, sitio)')
+    .eq('estado','activa').order('fecha_inicio',{ascending:false});
+  const bs = bandas || [];
+  $('k-bandas').textContent   = bs.length;
+  $('k-animales').textContent = fmt(bs.reduce((a,b)=>a+(b.animales_actuales||0),0));
+  $('tb-bandas').innerHTML = bs.length
+    ? bs.map(b => `<tr><td><strong>${b.codigo}</strong></td><td>${b.granja?.nombre || '—'}${b.granja?.sitio ? ' · '+b.granja.sitio : ''}</td><td>${b.fase_actual || '—'}</td><td class="num">${b.semana_vida ?? '—'}</td><td class="num">${fmt(b.animales_actuales)}</td><td>${b.fecha_inicio || '—'}</td></tr>`).join('')
+    : '<tr><td colspan="6"><div class="empty">Sin bandas activas todavía.</div></td></tr>';
+
+  // mapa de id -> codigo para joins en cliente
+  const codBanda = {}; bs.forEach(b => codBanda[b.id] = b.codigo);
+
+  // CONSUMOS últimos 30d
+  const hace30 = new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+  const { data: cons } = await sb.from('consumos')
+    .select('id, fecha, kg_consumidos, producto_codigo, creado_por, banda_id')
+    .gte('fecha', hace30).order('fecha',{ascending:false}).limit(80);
+  const cs = cons || [];
+  const porProd = {};
+  cs.forEach(c => { porProd[c.producto_codigo] = (porProd[c.producto_codigo] || 0) + (+c.kg_consumidos || 0); });
+  const maxV = Math.max(1, ...Object.values(porProd));
+  $('chConsumo').innerHTML = Object.keys(porProd).length
+    ? Object.entries(porProd).sort((a,b)=>b[1]-a[1]).map(([k,v]) =>
+        `<div class="bar"><div class="row"><span>${k}</span><strong>${fmt(v,1)} kg</strong></div><div class="track"><div class="fill" style="width:${(v/maxV*100).toFixed(0)}%"></div></div></div>`).join('')
+    : '<div class="empty">Sin consumos en los últimos 30 días.</div>';
+  $('tb-consumo').innerHTML = cs.length
+    ? cs.slice(0,40).map(c => `<tr><td>${c.fecha}</td><td>${codBanda[c.banda_id] || '—'}</td><td>${c.producto_codigo}</td><td class="num">${fmt(c.kg_consumidos,1)}</td><td>${c.creado_por || '—'}</td></tr>`).join('')
+    : '<tr><td colspan="5"><div class="empty">Sin consumos.</div></td></tr>';
+
+  // PESAJES
+  const { data: pes } = await sb.from('pesajes')
+    .select('id, fecha, peso_promedio_kg, n_animales, semana_vida, banda_id')
+    .order('fecha',{ascending:false}).limit(50);
+  const ps = pes || [];
+  if(ps.length) $('k-peso').textContent = (+ps[0].peso_promedio_kg).toFixed(1) + ' kg';
+  $('tb-peso').innerHTML = ps.length
+    ? ps.map(p => `<tr><td>${p.fecha}</td><td>${codBanda[p.banda_id] || '—'}</td><td class="num">${(+p.peso_promedio_kg).toFixed(2)}</td><td class="num">${fmt(p.n_animales)}</td><td class="num">${p.semana_vida ?? '—'}</td></tr>`).join('')
+    : '<tr><td colspan="5"><div class="empty">Sin pesajes.</div></td></tr>';
+
+  // chart peso (orden cronológico)
+  const psSorted = [...ps].reverse();
+  if(window._chPeso){ window._chPeso.destroy(); }
+  if(psSorted.length){
+    window._chPeso = new Chart($('chPeso').getContext('2d'), {
+      type:'line',
+      data:{
+        labels: psSorted.map(p => p.fecha),
+        datasets:[{
+          data: psSorted.map(p => +p.peso_promedio_kg),
+          borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.14)',
+          fill:true, tension:.3, pointRadius:3, pointBackgroundColor:'#86efac', pointBorderColor:'#22c55e', borderWidth:2
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0f172a', titleColor:'#e5e7eb', bodyColor:'#86efac'} },
+        scales:{
+          x:{ ticks:{color:'#9ca3af', font:{size:10}}, grid:{color:'rgba(255,255,255,.04)'} },
+          y:{ ticks:{color:'#9ca3af', font:{size:11}, callback:v=>v+' kg'}, grid:{color:'rgba(255,255,255,.04)'} }
+        }
+      }
+    });
+  }
+
+  // MORTALIDAD
+  const hace7 = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+  const { data: mts } = await sb.from('eventos_mortalidad')
+    .select('id, fecha, cantidad, causa, observaciones, banda_id')
+    .order('fecha',{ascending:false}).limit(40);
+  const ms = mts || [];
+  $('k-muertes').textContent = ms.filter(m => m.fecha >= hace7).reduce((a,m)=>a + (m.cantidad || 0), 0);
+  $('tb-muerte').innerHTML = ms.length
+    ? ms.map(m => `<tr><td>${m.fecha}</td><td>${codBanda[m.banda_id] || '—'}</td><td class="num">${m.cantidad}</td><td>${m.causa || '—'}</td><td>${(m.observaciones || '').replace(/</g,'&lt;')}</td></tr>`).join('')
+    : '<tr><td colspan="5"><div class="empty">Sin eventos de mortalidad.</div></td></tr>';
+}
+
+// Si ya hay sesión (te logueaste en el formulario), entrar directo
+(async function(){
+  try {
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session) enterApp(session.user);
+  } catch(e){ /* mostrar login */ }
+})();
+</script>
+</body>
+</html>
